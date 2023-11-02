@@ -1,9 +1,9 @@
 package simpledb.execution;
 
+import java.io.Serializable;
+
 import simpledb.storage.Field;
 import simpledb.storage.Tuple;
-
-import java.io.Serializable;
 
 /**
  * Predicate compares tuples to a specified Field value.
@@ -63,9 +63,9 @@ public class Predicate implements Serializable {
      * @param operand field value to compare passed in tuples to
      */
     public Predicate(int field, Op op, Field operand) {
-        this.field_number=field;
-        this.operation=op;
-        this.operand=operand;
+        this.field_number = field;
+        this.operation = op;
+        this.operand = operand;
         // TODO: some code goes here
     }
 
@@ -106,7 +106,7 @@ public class Predicate implements Serializable {
      * @return true if the comparison is true, false otherwise.
      */
     public boolean filter(Tuple t) {
-        return t.getField(this.getField()).compare(this.getOp(),this.getOperand());
+        return t.getField(this.getField()).compare(this.getOp(), this.getOperand());
         // TODO: some code goes here
     }
 
@@ -115,7 +115,6 @@ public class Predicate implements Serializable {
      * operand_string"
      */
     public String toString() {
-        // TODO: some code goes here
-        return "";
+        return String.format("fieldId: %s, operator: %s, operand: %s", this.field_number, this.operation, this.operand);
     }
 }
