@@ -16,11 +16,11 @@ public class Predicate implements Serializable {
      * Constants used for return codes in Field.compare
      */
 
-    public final int field_number;
+    private final int fieldNum;
 
-    public final Op operation;
+    private final Op operator;
 
-    public final Field operand;
+    private final Field operand;
 
     public enum Op implements Serializable {
         EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, LIKE, NOT_EQUALS;
@@ -62,29 +62,24 @@ public class Predicate implements Serializable {
      * @param op      operation to use for comparison
      * @param operand field value to compare passed in tuples to
      */
-    public Predicate(int field, Op op, Field operand) {
-        this.field_number = field;
-        this.operation = op;
+    public Predicate(int fieldNum, Op operator, Field operand) {
+        this.fieldNum = fieldNum;
+        this.operator = operator;
         this.operand = operand;
-        // TODO: some code goes here
     }
 
     /**
      * @return the field number
      */
     public int getField() {
-        return this.field_number;
-        // TODO: some code goes here
-        // return -1;
+        return this.fieldNum;
     }
 
     /**
      * @return the operator
      */
     public Op getOp() {
-        return this.operation;
-        // TODO: some code goes here
-        // return null;
+        return this.operator;
     }
 
     /**
@@ -92,8 +87,6 @@ public class Predicate implements Serializable {
      */
     public Field getOperand() {
         return this.operand;
-        // TODO: some code goes here
-        // return null;
     }
 
     /**
@@ -107,7 +100,6 @@ public class Predicate implements Serializable {
      */
     public boolean filter(Tuple t) {
         return t.getField(this.getField()).compare(this.getOp(), this.getOperand());
-        // TODO: some code goes here
     }
 
     /**
@@ -115,6 +107,6 @@ public class Predicate implements Serializable {
      * operand_string"
      */
     public String toString() {
-        return String.format("fieldId: %s, operator: %s, operand: %s", this.field_number, this.operation, this.operand);
+        return String.format("fieldId: %s, operator: %s, operand: %s", this.fieldNum, this.operator, this.operand);
     }
 }
