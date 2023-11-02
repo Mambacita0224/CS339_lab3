@@ -63,15 +63,13 @@ public class Filter extends Operator {
      */
     protected Tuple fetchNext() throws NoSuchElementException,
             TransactionAbortedException, DbException {
-        while (true) {
-            if (!this.child.hasNext()) {
-                return null;
-            }
+        while (this.child.hasNext()) {
             Tuple curr = this.child.next();
             if (this.predicate.filter(curr)) {
                 return curr;
             }
         }
+        return null;
     }
 
     @Override
