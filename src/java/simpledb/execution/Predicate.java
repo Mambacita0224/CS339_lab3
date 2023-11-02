@@ -58,9 +58,9 @@ public class Predicate implements Serializable {
     /**
      * Constructor.
      *
-     * @param field   field number of passed in tuples to compare against.
-     * @param op      operation to use for comparison
-     * @param operand field value to compare passed in tuples to
+     * @param fieldNum field number of passed in tuples to compare against.
+     * @param operator operation to use for comparison
+     * @param operand  field value to compare passed in tuples to
      */
     public Predicate(int fieldNum, Op operator, Field operand) {
         this.fieldNum = fieldNum;
@@ -106,6 +106,7 @@ public class Predicate implements Serializable {
      * Returns something useful, like "f = field_id op = op_string operand =
      * operand_string"
      */
+    @Override
     public String toString() {
         return String.format("fieldId: %s, operator: %s, operand: %s", this.fieldNum, this.operator, this.operand);
     }
