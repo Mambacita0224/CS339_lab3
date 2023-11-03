@@ -108,7 +108,7 @@ public class HeapFile implements DbFile {
         RandomAccessFile raf = new RandomAccessFile(f.getAbsoluteFile(), "rw");
 
         int offset = page.getId().getPageNumber() * BufferPool.getPageSize();
-        raf.skipBytes(offset);
+        raf.seek(offset);
         raf.write(page.getPageData());
         raf.close();
     }
@@ -141,9 +141,10 @@ public class HeapFile implements DbFile {
         }
 
         HeapPageId newPageID = new HeapPageId(this.getId(), this.numPages());
-        HeapPage newHeapPage = new HeapPage(newPageID, new byte[BufferPool.getPageSize()]);
+        HeapPage newHeapPage = new HeapPage(newPageID, HeapPage.createEmptyPageData());
         this.writePage(newHeapPage);
-        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, newPageID, Permissions.READ_WRITE);
+        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, newPageID,
+                Permissions.READ_WRITE);
         page.insertTuple(t);
         affectedPages.add(page);
         return affectedPages;

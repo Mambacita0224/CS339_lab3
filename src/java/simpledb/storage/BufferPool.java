@@ -165,6 +165,10 @@ public class BufferPool {
         List<Page> affectedPages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
         for (Page affectedPage : affectedPages) {
             affectedPage.markDirty(true, tid);
+            if (this.pages.size() > this.numPages) {
+                evictPage();
+            }
+            this.pages.put(affectedPage.getId(), affectedPage);
         }
     }
 
@@ -187,6 +191,10 @@ public class BufferPool {
         List<Page> affectedPages = Database.getCatalog().getDatabaseFile(tableId).deleteTuple(tid, t);
         for (Page affectedPage : affectedPages) {
             affectedPage.markDirty(true, tid);
+            if (this.pages.size() > this.numPages) {
+                evictPage();
+            }
+            this.pages.put(affectedPage.getId(), affectedPage);
         }
     }
 
