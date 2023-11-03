@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -104,7 +105,12 @@ public class HeapFile implements DbFile {
 
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
-        // TODO: some code goes here
+        RandomAccessFile raf = new RandomAccessFile(f.getAbsoluteFile(), "rw");
+
+        int offset = page.getId().getPageNumber() * BufferPool.getPageSize();
+        raf.skipBytes(offset);
+        raf.write(page.getPageData());
+        raf.close();
     }
 
     /**
@@ -120,7 +126,7 @@ public class HeapFile implements DbFile {
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         if (!this.getTupleDesc().equals(t.getTupleDesc())) {
-            throw new DbException("This tuple can't be added to this file!");
+            throw new DbException("TupleDesc mismatch!");
         }
 
         // Find a page with an empty slot
@@ -130,7 +136,9 @@ public class HeapFile implements DbFile {
             HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, pageId, Permissions.READ_WRITE);
             if (thisHeapPage.getNumUnusedSlots() != 0) {
                 thisHeapPage.insertTuple(t);
-                return new ArrayList<Page>(Arrays.asList(new Page[]{thisHeapPage}));
+                ArrayList<Page> returnArrayList= new ArrayList<Page>();
+                returnArrayList.add(thisHeapPage);
+                return returnArrayList;
             }
         }
         // If no such page exists in HeapFile, we need to create a new page and append it to the physical file on disk. How to do it(write page?)
@@ -138,7 +146,9 @@ public class HeapFile implements DbFile {
         HeapPage newHeapPage = new HeapPage(newPageID, new byte[BufferPool.getPageSize()]);
         newHeapPage.insertTuple(t);
         writePage(newHeapPage);
-        return new ArrayList<Page>(Arrays.asList(new Page[]{newHeapPage}));
+        ArrayList<Page> returnArrayList= new ArrayList<Page>();
+        returnArrayList.add(newHeapPage);
+        return returnArrayList;
     }
 
     // see DbFile.java for javadocs
@@ -150,7 +160,9 @@ public class HeapFile implements DbFile {
         //What does it mean by tuple cannot be deleted?
         HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_WRITE);
         thisHeapPage.deleteTuple(t);
-        return new ArrayList<Page>(Arrays.asList(new Page[]{thisHeapPage}));
+        ArrayList<Page> returnArrayList= new ArrayList<Page>();
+        returnArrayList.add(thisHeapPage);
+        return returnArrayList;
     }
 
     // see DbFile.java for javadocs
