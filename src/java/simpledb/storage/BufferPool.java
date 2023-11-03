@@ -1,23 +1,22 @@
 package simpledb.storage;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.common.DeadlockException;
 import simpledb.common.Permissions;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
  * disk. Access methods call into it to retrieve pages, and it fetches
  * pages from the appropriate location.
  * <p>
- * The BufferPool is also responsible for locking;  when a transaction fetches
+ * The BufferPool is also responsible for locking; when a transaction fetches
  * a page, BufferPool checks that the transaction has the appropriate
  * locks to read/write the page.
  *
@@ -38,7 +37,7 @@ public class BufferPool {
      */
     public static final int DEFAULT_PAGES = 50;
 
-    final int numPages;   // number of pages -- currently, not enforced
+    final int numPages; // number of pages -- currently, not enforced
     final ConcurrentMap<PageId, Page> pages; // hash table storing current pages in memory
 
     /**
@@ -70,9 +69,9 @@ public class BufferPool {
      * Will acquire a lock and may block if that lock is held by another
      * transaction.
      * <p>
-     * The retrieved page should be looked up in the buffer pool.  If it
-     * is present, it should be returned.  If it is not present, it should
-     * be added to the buffer pool and returned.  If there is insufficient
+     * The retrieved page should be looked up in the buffer pool. If it
+     * is present, it should be returned. If it is not present, it should
+     * be added to the buffer pool and returned. If there is insufficient
      * space in the buffer pool, a page should be evicted and the new page
      * should be added in its place.
      *
@@ -84,7 +83,7 @@ public class BufferPool {
             throws TransactionAbortedException, DbException {
         // XXX Yuan points out that HashMap is not synchronized, so this is buggy.
         // XXX TODO(ghuo): do we really know enough to implement NO STEAL here?
-        //     won't we still evict pages?
+        // won't we still evict pages?
         Page p;
         synchronized (this) {
             p = pages.get(pid);
@@ -147,7 +146,7 @@ public class BufferPool {
     }
 
     /**
-     * Add a tuple to the specified table on behalf of transaction tid.  Will
+     * Add a tuple to the specified table on behalf of transaction tid. Will
      * acquire a write lock on the page the tuple is added to and any other
      * pages that are updated (Lock acquisition is not needed for lab2).
      * May block if the lock(s) cannot be acquired.
@@ -163,7 +162,10 @@ public class BufferPool {
      */
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
-        // TODO: some code goes here
+        List<Page> affectedPages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
+        for (Page affectedPage : affectedPages) {
+            affectedPage.markDirty(true, tid);
+        }
     }
 
     /**
@@ -181,7 +183,12 @@ public class BufferPool {
      */
     public void deleteTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
-        // TODO: some code goes here
+        PageId pageId = t.getRecordId().getPageId();
+        int tableId = pageId.getTableId();
+        List<Page> affectedPages = Database.getCatalog().getDatabaseFile(tableId).deleteTuple(tid, t);
+        for (Page affectedPage : affectedPages) {
+            affectedPage.markDirty(true, tid);
+        }
     }
 
     /**
