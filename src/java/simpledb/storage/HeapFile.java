@@ -7,8 +7,12 @@ import simpledb.common.Permissions;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -115,15 +119,38 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public List<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
-        // TODO: some code goes here
-        return null;
+        if (!this.getTupleDesc().equals(t.getTupleDesc())) {
+            throw new DbException("This tuple can't be added to this file!");
+        }
+
+        // Find a page with an empty slot
+        int findIndex = 0;
+        for (; findIndex < this.numPages(); findIndex++) {
+            HeapPageId pageId = new HeapPageId(this.getId(), findIndex);
+            HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, pageId, Permissions.READ_WRITE);
+            if (thisHeapPage.getNumUnusedSlots() != 0) {
+                thisHeapPage.insertTuple(t);
+                return new ArrayList<Page>(Arrays.asList(new Page[]{thisHeapPage}));
+            }
+        }
+        // If no such page exists in HeapFile, we need to create a new page and append it to the physical file on disk. How to do it(write page?)
+        HeapPageId newPageID = new HeapPageId(this.getId(), findIndex + 1);
+        HeapPage newHeapPage = new HeapPage(newPageID, new byte[BufferPool.getPageSize()]);
+        newHeapPage.insertTuple(t);
+        writePage(newHeapPage);
+        return new ArrayList<Page>(Arrays.asList(new Page[]{newHeapPage}));
     }
 
     // see DbFile.java for javadocs
     public List<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
-        // TODO: some code goes here
-        return null;
+        if (this.getId() != t.getRecordId().getPageId().getTableId()) {
+            throw new DbException("The tuple is not a number in this file!");
+        }// Not sure about whether this statement checks it or not
+        //What does it mean by tuple cannot be deleted?
+        HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_WRITE);
+        thisHeapPage.deleteTuple(t);
+        return new ArrayList<Page>(Arrays.asList(new Page[]{thisHeapPage}));
     }
 
     // see DbFile.java for javadocs
