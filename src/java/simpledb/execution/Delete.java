@@ -1,5 +1,7 @@
 package simpledb.execution;
 
+import java.io.IOException;
+
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Type;
@@ -9,8 +11,6 @@ import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
-import java.io.IOException;
 
 /**
  * The delete operator. Delete reads tuples from its child operator and removes
@@ -48,13 +48,13 @@ public class Delete extends Operator {
     public void open() throws DbException, TransactionAbortedException {
         this.child.open();
         super.open();
-        this.opened=true;
+        this.opened = true;
     }
 
     public void close() {
         super.close();
         this.child.close();
-        this.opened=false;
+        this.opened = false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
@@ -75,7 +75,7 @@ public class Delete extends Operator {
         if (deleted) {
             return null;
         }
-        if (!opened){
+        if (!opened) {
             throw new DbException("This file is not opened.");
         }
         while (this.child.hasNext()) {
@@ -86,6 +86,7 @@ public class Delete extends Operator {
                 throw new RuntimeException(e);
             }
         }
+        this.deleted = true;
         Tuple returnTuple = new Tuple(this.getTupleDesc());
         returnTuple.setField(0, new IntField(deleteCount));
         return returnTuple;
@@ -93,7 +94,7 @@ public class Delete extends Operator {
 
     @Override
     public OpIterator[] getChildren() {
-        return new OpIterator[]{this.child};
+        return new OpIterator[] { this.child };
     }
 
     @Override
