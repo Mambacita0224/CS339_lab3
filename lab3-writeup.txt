@@ -1,0 +1,49 @@
+# Lab 3 Writeup
+
+Group members: Yuhang Zeng, Jason Qiu
+
+## Design Decisions:
+
+### Exercise 1 (Predicate, JoinPredicate, Filter, Join)
+
+We did not use any unique design decisions in this exercise.
+
+### Exercise 2 (IntegerAggregator, StringAggregator, Aggregate)
+
+Initially, to store the collection of tables, we created 3 arrays to contain `dbFile`, `name`, and `primaryKey` respectively. However, when implementing the methods, we found it inefficient to constantly iterate through these arrays to access a single table.
+
+Therefore, we decided to implement a helper class called `CatalogItem`. We added this helper class to better organize and encapsulate the 3 attributes of a table, namely `dbFile`, `name`, and `primaryKey`. We drew inspiration from `TDItem` in `TupleDesc.java` and implemented a similar inner class to encapsulate these fields.
+
+After creating `CatalogItem`, we also decided to use a `ConcurrentHashMap` to store the mapping from `tableId` to `CatalogItem`. We chose this mapping because we observed that most of the methods access a specified table through `tableId`. Thus, using a HashMap would give us constant time lookup for a given table.
+
+Lastly, we added a `ConcurrentHashMap` to store the mapping from `tableName` to `tableId`, because we found it inefficient to loop through the tables to find a specified table using its name.
+
+### Exercise 3 (HeapPage, HeapFile)
+
+We decided to use a `ConcurrentHashMap` to store the mapping from `pageId` to `Page`. By doing so, looking up a specific page takes constant time given the page's `pageId`.
+
+In the method `getPage()`, when the buffer pool does not contain the requested page, we fetch the page from the disk using the `readPage()` method inside `DbFile`.
+
+We also stored a variable to denote the maximum capacity of the buffer pool. Thus, in `getPage()`, we can compare the size of the `ConcurrentHashMap` with the variable to check whether we need to throw an exception or not.
+
+### Exercise 4 (Insert, Delete)
+
+When implementing the `hashcode()` function in the `RecordId` and `HeapPageId` classes, we were initially confused on how to best come up with a function that does not collide at all. However, after researching online, we found that collisions are inevitable in hash functions and the ideal output would be a uniform distributed hash function to maximize the performance of a HashMap. We further observed that prime numbers typically yielded a more uniform distribution. 
+
+Furthermore, when writing the `isSlotUsed()` method, we were puzzled on the format of the header and why the least significant bits of each byte represent the slots that are earlier in the file. Intuitively, we thought that the header would follow the exact same sequence as the data slots (i.e. Bit 1 matches slot 1). When writing `isSlotUsed()`, we found that we were able to use bitwise operations to efficiently determine whether a slot was used as a result of using this format. More specifically, we used a bitmask to isolate the specified slot. 
+
+Lastly, when implementing the `iterator()` method, we used an `ArrayList` to add in tuples from filled slots. We used an `ArrayList` because it is variable length and can be converted into an `Iterator` cleanly.
+
+### Exercise 5 (BufferPool)
+
+When writing `readPage()`, we used a `BufferedInputStream` to skip by an offset number of bytes to reach other desired page in the file. By doing so, we can reach pages at arbitrary offsets.
+
+For the `iterator()` method, we created a custom `HeapFileIterator` to fulfill the properties of a tuple iterator across a `DbFile`. The main logic rests in `HeapFileIterator::readNext()`. Essentially, there are 2 situations when the page's iterator reaches the end. Namely, either there is another page after or the iterator has reached the end of the file. We handle both cases by looping through the remaining pages and checking whether there is another valid tuple in the subsequent pages.
+
+## Incomplete Elements of Code:
+
+There are some incomplete functionalities, such as transaction management and eviction policy in the buffer pool, in this code. However, we believe we will implement them in the upcoming labs.
+
+## Time and Effort Spent on Lab:
+
+We spent about 12 hours on this lab. We found Exercise 5 to be the most difficult component of this lab and spent the most amount of time on it. We were confused about the hint on "random access to the file" and how to implement the `iterator()` method. But we found it fun to learn more about the `BufferedInputStream` class and implementing a custom iterator in Java.
