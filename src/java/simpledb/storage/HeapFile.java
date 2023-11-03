@@ -1,21 +1,20 @@
 package simpledb.storage;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Debug;
 import simpledb.common.Permissions;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.io.RandomAccessFile;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * HeapFile is an implementation of a DbFile that stores a collection of tuples
@@ -32,6 +31,7 @@ public class HeapFile implements DbFile {
     private final File f;
     private final TupleDesc td;
     private final int tableid;
+
     /**
      * Constructs a heap file backed by the specified file.
      *
@@ -117,8 +117,6 @@ public class HeapFile implements DbFile {
      * Returns the number of pages in this HeapFile.
      */
     public int numPages() {
-        // XXX: this seems to be rounding it down. isn't that wrong?
-        // XXX: (marcua) no - we only ever write full pages
         return (int) (f.length() / BufferPool.getPageSize());
     }
 
@@ -136,17 +134,18 @@ public class HeapFile implements DbFile {
             HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, pageId, Permissions.READ_WRITE);
             if (thisHeapPage.getNumUnusedSlots() != 0) {
                 thisHeapPage.insertTuple(t);
-                ArrayList<Page> returnArrayList= new ArrayList<Page>();
+                ArrayList<Page> returnArrayList = new ArrayList<Page>();
                 returnArrayList.add(thisHeapPage);
                 return returnArrayList;
             }
         }
-        // If no such page exists in HeapFile, we need to create a new page and append it to the physical file on disk. How to do it(write page?)
+        // If no such page exists in HeapFile, we need to create a new page and append
+        // it to the physical file on disk. How to do it(write page?)
         HeapPageId newPageID = new HeapPageId(this.getId(), findIndex + 1);
         HeapPage newHeapPage = new HeapPage(newPageID, new byte[BufferPool.getPageSize()]);
         newHeapPage.insertTuple(t);
         writePage(newHeapPage);
-        ArrayList<Page> returnArrayList= new ArrayList<Page>();
+        ArrayList<Page> returnArrayList = new ArrayList<Page>();
         returnArrayList.add(newHeapPage);
         return returnArrayList;
     }
@@ -156,11 +155,12 @@ public class HeapFile implements DbFile {
             TransactionAbortedException {
         if (this.getId() != t.getRecordId().getPageId().getTableId()) {
             throw new DbException("The tuple is not a number in this file!");
-        }// Not sure about whether this statement checks it or not
-        //What does it mean by tuple cannot be deleted?
-        HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_WRITE);
+        } // Not sure about whether this statement checks it or not
+          // What does it mean by tuple cannot be deleted?
+        HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(),
+                Permissions.READ_WRITE);
         thisHeapPage.deleteTuple(t);
-        ArrayList<Page> returnArrayList= new ArrayList<Page>();
+        ArrayList<Page> returnArrayList = new ArrayList<Page>();
         returnArrayList.add(thisHeapPage);
         return returnArrayList;
     }

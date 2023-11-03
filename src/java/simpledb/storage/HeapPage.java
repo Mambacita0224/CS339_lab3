@@ -1,14 +1,18 @@
 package simpledb.storage;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 import simpledb.common.Catalog;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Debug;
 import simpledb.transaction.TransactionId;
-
-import java.io.*;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 /**
  * Each instance of HeapPage stores data for one page of HeapFiles and
@@ -34,9 +38,11 @@ public class HeapPage implements Page {
      * Create a HeapPage from a set of bytes of data read from disk.
      * The format of a HeapPage is a set of header bytes indicating
      * the slots of the page that are in use, some number of tuple slots.
-     * Specifically, the number of tuples is equal to: <p>
+     * Specifically, the number of tuples is equal to:
+     * <p>
      * floor((BufferPool.getPageSize()*8) / (tuple size * 8 + 1))
-     * <p> where tuple size is the size of tuples in this
+     * <p>
+     * where tuple size is the size of tuples in this
      * database table, which can be determined via {@link Catalog#getTupleDesc}.
      * The number of 8-bit header words is equal to:
      * <p>
@@ -84,15 +90,18 @@ public class HeapPage implements Page {
     }
 
     /**
-     * Computes the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
+     * Computes the number of bytes in the header of a page in a HeapFile with each
+     * tuple occupying tupleSize bytes
      *
-     * @return the number of bytes in the header of a page in a HeapFile with each tuple occupying tupleSize bytes
+     * @return the number of bytes in the header of a page in a HeapFile with each
+     *         tuple occupying tupleSize bytes
      */
     private int getHeaderSize() {
 
         int tuplesPerPage = getNumTuples();
         int hb = (tuplesPerPage / 8);
-        if (hb * 8 < tuplesPerPage) hb++;
+        if (hb * 8 < tuplesPerPage)
+            hb++;
 
         return hb;
 
@@ -111,7 +120,7 @@ public class HeapPage implements Page {
             return new HeapPage(pid, oldDataRef);
         } catch (IOException e) {
             e.printStackTrace();
-            //should never happen -- we parsed it OK before!
+            // should never happen -- we parsed it OK before!
             System.exit(1);
         }
         return null;
@@ -219,7 +228,8 @@ public class HeapPage implements Page {
         }
 
         // padding
-        int zerolen = BufferPool.getPageSize() - (header.length + td.getSize() * tuples.length); //- numSlots * td.getSize();
+        int zerolen = BufferPool.getPageSize() - (header.length + td.getSize() * tuples.length); // - numSlots *
+                                                                                                 // td.getSize();
         byte[] zeroes = new byte[zerolen];
         try {
             dos.write(zeroes, 0, zerolen);
@@ -247,11 +257,12 @@ public class HeapPage implements Page {
      */
     public static byte[] createEmptyPageData() {
         int len = BufferPool.getPageSize();
-        return new byte[len]; //all 0
+        return new byte[len]; // all 0
     }
 
     /**
-     * Delete the specified tuple from the page; the corresponding header bit should be updated to reflect
+     * Delete the specified tuple from the page; the corresponding header bit should
+     * be updated to reflect
      * that it is no longer stored on any page.
      *
      * @param t The tuple to delete
@@ -269,7 +280,7 @@ public class HeapPage implements Page {
     }
 
     /**
-     * Adds the specified tuple to the page;  the tuple should be updated to reflect
+     * Adds the specified tuple to the page; the tuple should be updated to reflect
      * that it is now stored on this page.
      *
      * @param t The tuple to add.
@@ -285,7 +296,8 @@ public class HeapPage implements Page {
         // method to add the tuple
         int insertIndex = 0;
         for (; insertIndex < numSlots; insertIndex++) {
-            if (!isSlotUsed(insertIndex)) break;
+            if (!isSlotUsed(insertIndex))
+                break;
         }
         tuples[insertIndex] = t;
         t.setRecordId(new RecordId(pid, insertIndex));
@@ -299,13 +311,14 @@ public class HeapPage implements Page {
     public void markDirty(boolean dirty, TransactionId tid) {
         if (dirty) {
             this.lastTransactionDirty = tid;
-        }else{
-            this.lastTransactionDirty=null;
+        } else {
+            this.lastTransactionDirty = null;
         }
     }
 
     /**
-     * Returns the tid of the transaction that last dirtied this page, or null if the page is not dirty
+     * Returns the tid of the transaction that last dirtied this page, or null if
+     * the page is not dirty
      */
     public TransactionId isDirty() {
         return this.lastTransactionDirty;
@@ -345,7 +358,8 @@ public class HeapPage implements Page {
     }
 
     /**
-     * @return an iterator over all tuples on this page (calling remove on this iterator throws an UnsupportedOperationException)
+     * @return an iterator over all tuples on this page (calling remove on this
+     *         iterator throws an UnsupportedOperationException)
      *         (note that this iterator shouldn't return tuples in empty slots!)
      */
     public Iterator<Tuple> iterator() {
@@ -361,7 +375,8 @@ public class HeapPage implements Page {
 
         try {
             if (!isSlotUsed(i)) {
-                Debug.log(1, "HeapPage.getTuple: slot %d in %d:%d is not used", i, pid.getTableId(), pid.getPageNumber());
+                Debug.log(1, "HeapPage.getTuple: slot %d in %d:%d is not used", i, pid.getTableId(),
+                        pid.getPageNumber());
                 return null;
             }
 
