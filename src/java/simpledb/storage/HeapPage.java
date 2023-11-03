@@ -270,13 +270,19 @@ public class HeapPage implements Page {
      *                     already empty.
      */
     public void deleteTuple(Tuple t) throws DbException {
-        if (!this.pid.equals(t.getRecordId().getPageId())) {
-            throw new DbException("This tuple is not on this page!");
-        } else if (!isSlotUsed(t.getRecordId().getTupleNumber())) {
-            throw new DbException("This tuple slot is already empty!");
+        if (t.getRecordId() == null) {
+            throw new DbException("This tuple is already deleted.");
         }
-        // method to delete the tuple. t.setRecordId(null) doesn't work
-        markSlotUsed(t.getRecordId().getTupleNumber(), false);
+        PageId pageId = t.getRecordId().getPageId();
+        if (!this.pid.equals(pageId)) {
+            throw new DbException("This tuple is not on this page.");
+        }
+        int tupleNum = t.getRecordId().getTupleNumber();
+        if (!isSlotUsed(tupleNum)) {
+            throw new DbException("This tuple slot is already empty.");
+        }
+        this.markSlotUsed(tupleNum, false);
+        tuples[tupleNum] = null;
     }
 
     /**
@@ -290,18 +296,19 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         if (this.getNumUnusedSlots() == 0) {
             throw new DbException("The page is full!");
-        } else if (!this.td.equals(t.getTupleDesc())) {
+        }
+        if (!this.td.equals(t.getTupleDesc())) {
             throw new DbException("Tupledesc is mismatch!");
         }
-        // method to add the tuple
-        int insertIndex = 0;
-        for (; insertIndex < numSlots; insertIndex++) {
-            if (!isSlotUsed(insertIndex))
-                break;
+
+        for (int i = 0; i < numSlots; i++) {
+            if (!isSlotUsed(i)) {
+                t.setRecordId(new RecordId(this.pid, i));
+                this.markSlotUsed(i, true);
+                this.tuples[i] = t;
+                return;
+            }
         }
-        tuples[insertIndex] = t;
-        t.setRecordId(new RecordId(pid, insertIndex));
-        markSlotUsed(insertIndex, true);
     }
 
     /**
@@ -349,11 +356,12 @@ public class HeapPage implements Page {
      */
     private void markSlotUsed(int i, boolean value) {
         int headerbit = i % 8;
-        int headerbyte = (i - headerbit) / 8;
-        if (isSlotUsed(i) && !value) {
-            header[headerbyte] -= (byte) (1 << headerbit);
-        } else if (!isSlotUsed(i) && value) {
-            header[headerbyte] += (byte) (1 << headerbit);
+        int headerbyte = i / 8;
+
+        if (value) {
+            header[headerbyte] |= (1 << headerbit);
+        } else {
+            header[headerbyte] &= ~(1 << headerbit);
         }
     }
 
