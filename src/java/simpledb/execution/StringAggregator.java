@@ -60,10 +60,9 @@ public class StringAggregator implements Aggregator {
         } else {
             Field groupByField = tup.getField(this.groupByFieldIndex);
             if (this.groupCount.get(groupByField) == null) {
-                this.groupCount.put(groupByField, 1);
-            } else {
-                this.groupCount.put(groupByField, this.groupCount.get(groupByField) + 1);
+                this.groupCount.put(groupByField, 0);
             }
+            this.groupCount.put(groupByField, this.groupCount.get(groupByField) + 1);
         }
     }
 
