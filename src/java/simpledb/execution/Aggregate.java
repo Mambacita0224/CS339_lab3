@@ -106,6 +106,7 @@ public class Aggregate extends Operator {
             this.aggregator.mergeTupleIntoGroup(this.child.next());
         }
         this.aggregateIterator = this.aggregator.iterator();
+        this.aggregateIterator.open();
         super.open();
     }
 
@@ -153,6 +154,7 @@ public class Aggregate extends Operator {
     public void close() {
         super.close();
         this.child.close();
+        this.aggregateIterator.close();
         this.aggregateIterator = null;
     }
 
