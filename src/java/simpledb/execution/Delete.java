@@ -3,10 +3,13 @@ package simpledb.execution;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.storage.BufferPool;
+import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+
+import java.io.IOException;
 
 /**
  * The delete operator. Delete reads tuples from its child operator and removes
@@ -59,19 +62,28 @@ public class Delete extends Operator {
      * @see BufferPool#deleteTuple
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // TODO: some code goes here
-        return null;
+        int deleteCount = 0;
+        while (this.child.hasNext()) {
+            try {
+                Database.getBufferPool().deleteTuple(this.transactionId, this.child.next());
+                deleteCount++;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        Tuple returnTuple = new Tuple(this.getTupleDesc());
+        returnTuple.setField(deleteCount, new IntField(deleteCount));
+        return returnTuple;
     }
 
     @Override
     public OpIterator[] getChildren() {
-        // TODO: some code goes here
-        return null;
+        return new OpIterator[]{this.child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-        // TODO: some code goes here
+        this.child = children[0];
     }
 
 }

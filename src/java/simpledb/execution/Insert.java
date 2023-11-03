@@ -3,10 +3,13 @@ package simpledb.execution;
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.storage.BufferPool;
+import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
+
+import java.io.IOException;
 
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
@@ -19,6 +22,8 @@ public class Insert extends Operator {
     private TransactionId transactionId;
     private OpIterator child;
     private int tableId;
+
+    private boolean inserted;
 
     /**
      * Constructor.
@@ -35,6 +40,7 @@ public class Insert extends Operator {
         this.transactionId = t;
         this.child = child;
         this.tableId = tableId;
+        this.inserted = false;
     }
 
     public TupleDesc getTupleDesc() {
@@ -49,10 +55,12 @@ public class Insert extends Operator {
     public void close() {
         super.close();
         this.child.close();
+        this.inserted = false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         this.child.rewind();
+        this.inserted = false;
     }
 
     /**
@@ -69,8 +77,21 @@ public class Insert extends Operator {
      * @see BufferPool#insertTuple
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
-        // TODO: some code goes here
-        return null;
+        if (inserted) {
+            return null;
+        }
+        int insertCount = 0;
+        while (this.child.hasNext()) {
+            try {
+                Database.getBufferPool().insertTuple(this.transactionId, this.tableId, this.child.next());
+                insertCount++;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        Tuple returnTuple = new Tuple(this.getTupleDesc());
+        returnTuple.setField(insertCount, new IntField(insertCount));
+        return returnTuple;
     }
 
     @Override
