@@ -2,6 +2,7 @@ package simpledb.execution;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
+import simpledb.common.Type;
 import simpledb.storage.BufferPool;
 import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
@@ -22,6 +23,10 @@ public class Delete extends Operator {
     private TransactionId transactionId;
     private OpIterator child;
 
+    private boolean deleted;
+
+    private boolean opened;
+
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -32,20 +37,24 @@ public class Delete extends Operator {
     public Delete(TransactionId t, OpIterator child) {
         this.transactionId = t;
         this.child = child;
+        this.deleted = false;
+        this.opened = false;
     }
 
     public TupleDesc getTupleDesc() {
-        return this.child.getTupleDesc();
+        return new TupleDesc(new Type[] { Type.INT_TYPE }, new String[] { "countValue" });
     }
 
     public void open() throws DbException, TransactionAbortedException {
         this.child.open();
         super.open();
+        this.opened=true;
     }
 
     public void close() {
         super.close();
         this.child.close();
+        this.opened=false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
@@ -63,6 +72,12 @@ public class Delete extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         int deleteCount = 0;
+        if (deleted) {
+            return null;
+        }
+        if (!opened){
+            throw new DbException("This file is not opened.");
+        }
         while (this.child.hasNext()) {
             try {
                 Database.getBufferPool().deleteTuple(this.transactionId, this.child.next());
@@ -72,7 +87,7 @@ public class Delete extends Operator {
             }
         }
         Tuple returnTuple = new Tuple(this.getTupleDesc());
-        returnTuple.setField(deleteCount, new IntField(deleteCount));
+        returnTuple.setField(0, new IntField(deleteCount));
         return returnTuple;
     }
 
