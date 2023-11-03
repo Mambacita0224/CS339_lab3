@@ -2,15 +2,11 @@ package simpledb.execution;
 
 import simpledb.common.Database;
 import simpledb.common.DbException;
-import simpledb.common.Type;
 import simpledb.storage.BufferPool;
-import simpledb.storage.IntField;
 import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
-import java.io.IOException;
 
 /**
  * The delete operator. Delete reads tuples from its child operator and removes
@@ -20,6 +16,9 @@ public class Delete extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private TransactionId transactionId;
+    private OpIterator child;
+
     /**
      * Constructor specifying the transaction that this delete belongs to as
      * well as the child to read from.
@@ -28,24 +27,26 @@ public class Delete extends Operator {
      * @param child The child operator from which to read tuples for deletion
      */
     public Delete(TransactionId t, OpIterator child) {
-        // TODO: some code goes here
+        this.transactionId = t;
+        this.child = child;
     }
 
     public TupleDesc getTupleDesc() {
-        // TODO: some code goes here
-        return null;
+        return this.child.getTupleDesc();
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // TODO: some code goes here
+        this.child.open();
+        super.open();
     }
 
     public void close() {
-        // TODO: some code goes here
+        super.close();
+        this.child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // TODO: some code goes here
+        this.child.rewind();
     }
 
     /**

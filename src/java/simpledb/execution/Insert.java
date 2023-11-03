@@ -1,11 +1,12 @@
 package simpledb.execution;
 
-import simpledb.transaction.TransactionId;
+import simpledb.common.Database;
 import simpledb.common.DbException;
+import simpledb.storage.BufferPool;
+import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
-import simpledb.storage.Tuple;
-import simpledb.common.Type;
+import simpledb.transaction.TransactionId;
 
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
@@ -15,35 +16,43 @@ public class Insert extends Operator {
 
     private static final long serialVersionUID = 1L;
 
+    private TransactionId transactionId;
+    private OpIterator child;
+    private int tableId;
+
     /**
      * Constructor.
      *
      * @param t       The transaction running the insert.
      * @param child   The child operator from which to read tuples to be inserted.
      * @param tableId The table in which to insert tuples.
-     * @throws DbException if TupleDesc of child differs from table into which we are to
+     * @throws DbException if TupleDesc of child differs from table into which we
+     *                     are to
      *                     insert.
      */
     public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
-        // TODO: some code goes here
+        this.transactionId = t;
+        this.child = child;
+        this.tableId = tableId;
     }
 
     public TupleDesc getTupleDesc() {
-        // TODO: some code goes here
-        return null;
+        return this.child.getTupleDesc();
     }
 
     public void open() throws DbException, TransactionAbortedException {
-        // TODO: some code goes here
+        this.child.open();
+        super.open();
     }
 
     public void close() {
-        // TODO: some code goes here
+        super.close();
+        this.child.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
-        // TODO: some code goes here
+        this.child.rewind();
     }
 
     /**
@@ -66,12 +75,11 @@ public class Insert extends Operator {
 
     @Override
     public OpIterator[] getChildren() {
-        // TODO: some code goes here
-        return null;
+        return new OpIterator[] { this.child };
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
-        // TODO: some code goes here
+        this.child = children[0];
     }
 }
