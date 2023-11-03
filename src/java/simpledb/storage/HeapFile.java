@@ -127,27 +127,26 @@ public class HeapFile implements DbFile {
             throw new DbException("TupleDesc mismatch!");
         }
 
+        ArrayList<Page> affectedPages = new ArrayList<Page>();
+
         // Find a page with an empty slot
-        int findIndex = 0;
-        for (; findIndex < this.numPages(); findIndex++) {
-            HeapPageId pageId = new HeapPageId(this.getId(), findIndex);
-            HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, pageId, Permissions.READ_WRITE);
-            if (thisHeapPage.getNumUnusedSlots() != 0) {
-                thisHeapPage.insertTuple(t);
-                ArrayList<Page> returnArrayList = new ArrayList<Page>();
-                returnArrayList.add(thisHeapPage);
-                return returnArrayList;
+        for (int i = 0; i < this.numPages(); i++) {
+            HeapPageId pageId = new HeapPageId(this.getId(), i);
+            HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, pageId, Permissions.READ_WRITE);
+            if (page.getNumUnusedSlots() != 0) {
+                page.insertTuple(t);
+                affectedPages.add(page);
+                return affectedPages;
             }
         }
-        // If no such page exists in HeapFile, we need to create a new page and append
-        // it to the physical file on disk. How to do it(write page?)
-        HeapPageId newPageID = new HeapPageId(this.getId(), findIndex + 1);
+
+        HeapPageId newPageID = new HeapPageId(this.getId(), this.numPages());
         HeapPage newHeapPage = new HeapPage(newPageID, new byte[BufferPool.getPageSize()]);
-        newHeapPage.insertTuple(t);
-        writePage(newHeapPage);
-        ArrayList<Page> returnArrayList = new ArrayList<Page>();
-        returnArrayList.add(newHeapPage);
-        return returnArrayList;
+        this.writePage(newHeapPage);
+        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, newPageID, Permissions.READ_WRITE);
+        page.insertTuple(t);
+        affectedPages.add(page);
+        return affectedPages;
     }
 
     // see DbFile.java for javadocs
@@ -157,12 +156,12 @@ public class HeapFile implements DbFile {
             throw new DbException("The tuple is not a number in this file!");
         } // Not sure about whether this statement checks it or not
           // What does it mean by tuple cannot be deleted?
-        HeapPage thisHeapPage = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(),
+        HeapPage page = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(),
                 Permissions.READ_WRITE);
-        thisHeapPage.deleteTuple(t);
-        ArrayList<Page> returnArrayList = new ArrayList<Page>();
-        returnArrayList.add(thisHeapPage);
-        return returnArrayList;
+        page.deleteTuple(t);
+        ArrayList<Page> affectedPages = new ArrayList<Page>();
+        affectedPages.add(page);
+        return affectedPages;
     }
 
     // see DbFile.java for javadocs
