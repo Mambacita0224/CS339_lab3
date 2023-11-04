@@ -1,5 +1,7 @@
 package simpledb.execution;
 
+import java.io.IOException;
+
 import simpledb.common.Database;
 import simpledb.common.DbException;
 import simpledb.common.Type;
@@ -9,8 +11,6 @@ import simpledb.storage.Tuple;
 import simpledb.storage.TupleDesc;
 import simpledb.transaction.TransactionAbortedException;
 import simpledb.transaction.TransactionId;
-
-import java.io.IOException;
 
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
@@ -85,7 +85,7 @@ public class Insert extends Operator {
         if (inserted) {
             return null;
         }
-        if (!opened){
+        if (!opened) {
             throw new DbException("This file is not opened.");
         }
         int insertCount = 0;
@@ -98,7 +98,7 @@ public class Insert extends Operator {
             }
         }
         inserted = true;
-        Tuple returnTuple= new Tuple(this.getTupleDesc());
+        Tuple returnTuple = new Tuple(this.getTupleDesc());
         returnTuple.setField(0, new IntField(insertCount));
         return returnTuple;
     }
