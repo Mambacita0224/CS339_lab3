@@ -1,7 +1,9 @@
 package simpledb.storage;
 
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -40,6 +42,8 @@ public class BufferPool {
     final int numPages; // number of pages -- currently, not enforced
     final ConcurrentMap<PageId, Page> pages; // hash table storing current pages in memory
 
+    private Queue<PageId> queue;
+
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -48,6 +52,7 @@ public class BufferPool {
     public BufferPool(int numPages) {
         this.numPages = numPages;
         this.pages = new ConcurrentHashMap<>();
+        this.queue = new LinkedList<>();
     }
 
     public static int getPageSize() {
@@ -96,7 +101,7 @@ public class BufferPool {
                 pages.put(pid, p);
             }
         }
-
+        this.updateQueue(p.getId());
         return p;
     }
 
@@ -169,6 +174,7 @@ public class BufferPool {
                 evictPage();
             }
             this.pages.put(affectedPage.getId(), affectedPage);
+            this.updateQueue(affectedPage.getId());
         }
     }
 
@@ -195,6 +201,7 @@ public class BufferPool {
                 evictPage();
             }
             this.pages.put(affectedPage.getId(), affectedPage);
+            this.updateQueue(affectedPage.getId());
         }
     }
 
@@ -204,8 +211,9 @@ public class BufferPool {
      * break simpledb if running in NO STEAL mode.
      */
     public synchronized void flushAllPages() throws IOException {
-        // TODO: some code goes here
-
+        for (PageId pageId : this.pages.keySet()) {
+            this.flushPage(pageId);
+        }
     }
 
     /**
@@ -218,7 +226,7 @@ public class BufferPool {
      * are removed from the cache so they can be reused safely
      */
     public synchronized void removePage(PageId pid) {
-        // TODO: some code goes here
+        this.pages.remove(pid);
     }
 
     /**
@@ -227,7 +235,19 @@ public class BufferPool {
      * @param pid an ID indicating the page to flush
      */
     private synchronized void flushPage(PageId pid) throws IOException {
-        // TODO: some code goes here
+        if (this.pages.get(pid) == null) {
+            return;
+        }
+        boolean isNotDirty = this.pages.get(pid).isDirty() == null;
+        if (isNotDirty) {
+            return;
+        }
+
+        Page dirtyPage = this.pages.get(pid);
+
+        int tableId = dirtyPage.getId().getTableId();
+        Database.getCatalog().getDatabaseFile(tableId).writePage(dirtyPage);
+        dirtyPage.markDirty(false, null);
     }
 
     /**
@@ -243,7 +263,13 @@ public class BufferPool {
      * Flushes the page to disk to ensure dirty pages are updated on disk.
      */
     private synchronized void evictPage() throws DbException {
-        // TODO: some code goes here
+        PageId evictedPageId = this.queue.remove();
+        this.removePage(evictedPageId);
+    }
+
+    private void updateQueue(PageId pid) {
+        this.queue.remove(pid);
+        this.queue.add(pid);
     }
 
 }
