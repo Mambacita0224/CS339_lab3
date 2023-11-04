@@ -12,16 +12,15 @@ public class Predicate implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * Constants used for return codes in Field.compare
-     */
-
-    private final int fieldNum;
+    private final int fieldIndex;
 
     private final Op operator;
 
     private final Field operand;
 
+    /**
+     * Constants used for return codes in Field.compare
+     */
     public enum Op implements Serializable {
         EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, LIKE, NOT_EQUALS;
 
@@ -58,12 +57,12 @@ public class Predicate implements Serializable {
     /**
      * Constructor.
      *
-     * @param fieldNum field number of passed in tuples to compare against.
-     * @param operator operation to use for comparison
-     * @param operand  field value to compare passed in tuples to
+     * @param fieldIndex field number of passed in tuples to compare against.
+     * @param operator   operation to use for comparison
+     * @param operand    field value to compare passed in tuples to
      */
-    public Predicate(int fieldNum, Op operator, Field operand) {
-        this.fieldNum = fieldNum;
+    public Predicate(int fieldIndex, Op operator, Field operand) {
+        this.fieldIndex = fieldIndex;
         this.operator = operator;
         this.operand = operand;
     }
@@ -72,7 +71,7 @@ public class Predicate implements Serializable {
      * @return the field number
      */
     public int getField() {
-        return this.fieldNum;
+        return this.fieldIndex;
     }
 
     /**
@@ -108,6 +107,6 @@ public class Predicate implements Serializable {
      */
     @Override
     public String toString() {
-        return String.format("fieldId: %s, operator: %s, operand: %s", this.fieldNum, this.operator, this.operand);
+        return String.format("fieldId: %s, operator: %s, operand: %s", this.fieldIndex, this.operator, this.operand);
     }
 }
